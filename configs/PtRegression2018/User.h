@@ -26,6 +26,7 @@ namespace PtRegression2018_cfg {
     if (USER == "mdecaro") {
       OUT_DIR_NAME = "./";
     }
+
   } // End function: inline void ConfigureUser()
 
 } // End namespace PtRegression2018_cfg
