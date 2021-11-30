@@ -198,6 +198,9 @@ void PtRegressionRun3Prep(TString user = "",
   if (isRun2) {
     treeString = "FlatNtupleMCRun2/tree";
   }
+  if (!isRun2) {
+    treeString = "FlatNtupleMCRun3/tree";
+  }
 
   std::cout << treeString << std::endl;
 
@@ -383,6 +386,7 @@ void PtRegressionRun3Prep(TString user = "",
   spec_vars.push_back( MVA_var( "ph3",    "St 3 LCT phi",      "int", 'I', -77 ) ); // 0x0000 4000
   spec_vars.push_back( MVA_var( "ph4",    "St 4 LCT phi",      "int", 'I', -77 ) ); // 0x0000 8000
 
+  spec_vars.push_back( MVA_var( "TRK_hit_ids",    "Track Hits Id",      "int", 'I', -77 ) );
 
   assert( in_vars.size() > 0 );   // Need at least one input variable
   assert( targ_vars.size() > 0 ); // Need at least one target variable
@@ -461,14 +465,14 @@ void PtRegressionRun3Prep(TString user = "",
 
       if (iEvent > nEvents) break;
       iEvent++;
-      if (jEvt%1000==0) std::cout << "******* About to loop on event " << jEvt << " *******" << std::endl;
+      if (jEvt%1000==0) std::cout << "******* About to loop on event " << jEvt << ", nTrain: " << nTrain << ", nTest: " << nTest << " *******" << std::endl;
       //!!! jEvt restarts from 0 in new chain
 
       //!!! iCh<1 important here: Protect against small MAX_TR setting
       //When iCh = 1, it start to load ZB events, the first break from MAX_TR shouldn't affect the following ZB loading process
       //Otherwise no ZB events will be loaded, cause trouble when calculating rate
       if (nTrain > MAX_TR && iCh<1) break;
-      if (nTest > MAX_TE) break;
+      //if (nTest > MAX_TE) break;
 
       //iCh=0 means SingleMu dataset,
       //need to modify in the future if have more types of samples added for training, such as Muonia, etc
@@ -507,6 +511,11 @@ void PtRegressionRun3Prep(TString user = "",
         int mu_charge = -99;
         int gmt_pt = 999;
         Bool_t mu_train = false;  // tag muon for training
+
+        if(verbose)
+        {
+            std::cout << "Event: " << jEvt << ", iTrk: " << iTrk << std::endl;
+        }
 
         // index of emtf_unique_iMu is 0 or 1
         mu_train = true;
@@ -579,12 +588,19 @@ void PtRegressionRun3Prep(TString user = "",
           // trk_nHits, VI("trk_iHit", iTrk).size(), trk_nRPC, and trk_mode_CSC
 
           if( iHit < nHits){//Avoid the case when iHit index larger than the total number of hits in the event, this happens sometimes
-            if(       I("hit_station", iHit) == 1 && I("hit_isCSC",iHit)==1 ){ i1CSC = iHit; }
+            if(       I("hit_station", iHit) == 1 && (I("hit_isCSC",iHit)==1 || I("hit_isRPC",iHit)==1) ){ i1CSC = iHit; }
             else if(  I("hit_station", iHit) == 1 && I("hit_isGEM",iHit)==1 ){ i1GEM = iHit; }
-            else if ( I("hit_station", iHit) == 2 && I("hit_isCSC",iHit)==1 ){ i2 = iHit; }
-            else if ( I("hit_station", iHit) == 3 && I("hit_isCSC",iHit)==1 ){ i3 = iHit; }
-            else if ( I("hit_station", iHit) == 4 && I("hit_isCSC",iHit)==1 ){ i4 = iHit; }
+            else if ( I("hit_station", iHit) == 2 && (I("hit_isCSC",iHit)==1 || I("hit_isRPC",iHit)==1)){ i2 = iHit; }
+            else if ( I("hit_station", iHit) == 3 && (I("hit_isCSC",iHit)==1 || I("hit_isRPC",iHit)==1) ){ i3 = iHit; }
+            else if ( I("hit_station", iHit) == 4 && (I("hit_isCSC",iHit)==1 || I("hit_isRPC",iHit)==1) ){ i4 = iHit; }
           }
+          if( iHit < nHits && verbose){//Avoid the case when iHit index larger than the total number of hits in the event, this happens sometimes
+            if(       I("hit_station", iHit) == 1 && I("hit_isRPC",iHit)==1 ){ std::cout << "##HIT in RPC1" << std::endl; }
+            else if ( I("hit_station", iHit) == 2 && I("hit_isRPC",iHit)==1 ){ std::cout << "##HIT in RPC2" << std::endl; }
+            else if ( I("hit_station", iHit) == 3 && I("hit_isRPC",iHit)==1 ){ std::cout << "##HIT in RPC3" << std::endl; }
+            else if ( I("hit_station", iHit) == 4 && I("hit_isRPC",iHit)==1 ){ std::cout << "##HIT in RPC4" << std::endl; }
+          }
+
         }//end loop over hits in selected emtf track
 
         //std::cout << "i1GEM after: " << i1GEM << std::endl;
@@ -605,7 +621,7 @@ void PtRegressionRun3Prep(TString user = "",
         if (mode != emtfMode) continue;
         if (mode != mode_CSC) {
           if(verbose) std::cout << "Not CSC-only track"<< std::endl;
-          continue;
+          //continue;
         }
 
         int ph1 = (i1CSC >= 0 ? I("hit_phi_int",i1CSC ) : -99);
@@ -742,6 +758,7 @@ void PtRegressionRun3Prep(TString user = "",
         int FR1, FR2, FR3, FR4;
         //uncommented on 19/1/2021 int bend1, bend2, bend3, bend4;
         int RPC1, RPC2, RPC3, RPC4;
+        int CSC1, CSC2, CSC3, CSC4;
         int dPhGE11ME11;
         int GE11;
 
@@ -769,7 +786,11 @@ void PtRegressionRun3Prep(TString user = "",
 
         //Avoid too large dPhis due to neighbouring chamber effects.
         if ( abs(dPh12) > 1000 || abs(dPh13) > 1000 || abs(dPh14) > 1000 ||
-             abs(dPh23) > 1000 || abs(dPh24) > 1000 || abs(dPh34) > 1000 ) continue;
+             abs(dPh23) > 1000 || abs(dPh24) > 1000 || abs(dPh34) > 1000 )
+        {
+             std::cout << "Not CSC-only track"<< std::endl;    
+             continue;
+        }
 
         CalcDeltaThetas( dTh12, dTh13, dTh14, dTh23, dTh24, dTh34,
                          th1, th2, th3, th4, mode, useBitCompression );
@@ -839,14 +860,34 @@ void PtRegressionRun3Prep(TString user = "",
                   pat1_run3, pat2_run3, pat3_run3, pat4_run3,
                   dPhSign, endcap, mode, BIT_COMP, isRun2 );
 
-	//std::cout << "(Before assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
+        if(verbose)
+        {
+	    std::cout << "(Before assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
+            if(RPC1 ||  RPC2 || RPC3 || RPC4)
+            {
+                std::cout << "##########(Before assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
+                std::cout << "### i1CSC: " << i1CSC << ", i2: " << i2 << ", i3: " << i3 << ", i4: " << i4  << std::endl;
+                std::cout << "### I(hit_isRPC,i1CSC): " << I("hit_isRPC",i1CSC ) << ", I(hit_isRPC,i2): " << I("hit_isRPC", i2 ) << ", I(hit_isRPC,i3): " << I("hit_isRPC", i3 ) << ", I(hit_isRPC,i4): " << I("hit_isRPC", i4 )  << std::endl;
+            }
+        }
         // Check for additional hits
         RPC1 = (i1CSC >= 0 ? ( I("hit_isRPC",i1CSC ) == 1 ? 1 : 0) : -99);
+        CSC1 = (i1CSC >= 0 ? ( I("hit_isCSC",i1CSC ) == 1 ? 1 : 0) : -99);
         RPC2 = (i2 >= 0 ? ( I("hit_isRPC", i2 ) == 1 ? 1 : 0) : -99);
+        CSC2 = (i2 >= 0 ? ( I("hit_isCSC", i2 ) == 1 ? 1 : 0) : -99);
         RPC3 = (i3 >= 0 ? ( I("hit_isRPC", i3 ) == 1 ? 1 : 0) : -99);
+        CSC3 = (i3 >= 0 ? ( I("hit_isCSC", i3 ) == 1 ? 1 : 0) : -99);
         RPC4 = (i4 >= 0 ? ( I("hit_isRPC", i4 ) == 1 ? 1 : 0) : -99);
+        CSC4 = (i4 >= 0 ? ( I("hit_isCSC", i4 ) == 1 ? 1 : 0) : -99);
 
-	//std::cout << "(After assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
+        if(verbose)
+        {
+	    std::cout << "(After assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
+            if(RPC1 ||  RPC2 || RPC3 || RPC4)
+            {
+                std::cout << "##########(After assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
+            }
+        }
 
         GE11 = (i1GEM >= 0 ? ( I("hit_isGEM",i1GEM ) == 1 ? 1 : 0) : -99);
 
@@ -1007,6 +1048,8 @@ void PtRegressionRun3Prep(TString user = "",
             if ( vName == "ph3" ) var_vals.at(iVar) = ph3;
             if ( vName == "ph4" ) var_vals.at(iVar) = ph4;
 
+            if ( vName == "TRK_hit_ids" ) var_vals.at(iVar) = CSC1 + 2 * CSC2 + 4 * CSC3 + 8 * CSC4 + 16*( RPC1 + 2 * RPC2 + 4 * RPC3 + 8 * RPC4 );
+
           } // End loop: for (UInt_t iVar = 0; iVar < var_names.size(); iVar++)
 
           // Load values into event
@@ -1016,7 +1059,7 @@ void PtRegressionRun3Prep(TString user = "",
 
             // std::cout << "Total events in training sample " << nTrain << std::endl;
           }
-          else {
+          else if( nTest < MAX_TE ) {
             std::get<1>(factories.at(iFact))->AddTestEvent( "Regression", var_vals, evt_weight );
             if (iFact == 0) nTest += 1;
 
