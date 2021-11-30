@@ -74,5 +74,23 @@ You may need to modify the EMTF track builder according to the attached screensh
 
 **Sven: Add here instructions how to run EMTF simulation with custom lookup tables.**
 
+```
+cmsrel CMSSW_12_1_0_pre3
+cd CMSSW_12_1_0_pre3/src
+cmsenv
+git cms-init
+git cms-addpkg L1Trigger/L1TMuonEndCap
+git cms-cherry-pick-pr 36094 
+git clone https://github.com/dildick/L1Trigger-L1TMuonEndCap
+mkdir L1Trigger/L1TMuonEndCap/data
+cp -r L1Trigger-L1TMuonEndCap/pt_xmls L1Trigger/L1TMuonEndCap/data
+rm -rf L1Trigger-L1TMuonEndCap
+# now customize the trackfinder so that lookup tables are only loaded once per event
+
+git clone git@github.com:dildick/EMTFAnalyzer.git
+git clone git@github.com:dildick/EMTFPtAssign2017.git #put here for completeness, but not needed for running CMSSW
+
+```
+
 ## TRK_hit_ids variable
 The variable TRK_hit_ids has been added as a spectator variable and is generated as an 8 bit number that contains which CSCs and RPCs were used in the building of a particular track. The first 4 bits hold information about ME1, ME2, ME3, ME4 and the last four bits hold information about RPC1, RPC2, RPC3, RPC4, where a 1 indicates that a hit in the detector was used and a 0 indicates there was no hit in the detector used in the track. An all CSC track for mode 15 would be 11110000 and an all RPC track for mode 15 would be 00001111.
