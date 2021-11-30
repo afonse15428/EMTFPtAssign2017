@@ -96,7 +96,7 @@ xrdcpglobal() {
     xrdcp -f -d 1 "root://cms-xrd-global.cern.ch/$1" .
 }
 
-xrdcp /store/data/Run2018D/ZeroBias/RAW/v1/000/322/022/00000/F87A285E-87AD-E811-89A7-FA163E0481A2.root
+xrdcpglobal /store/data/Run2018D/ZeroBias/RAW/v1/000/322/022/00000/F87A285E-87AD-E811-89A7-FA163E0481A2.root
 
 # go to the test directory 
 cd EMTFAnalyzer/NTupleMaker/test/
