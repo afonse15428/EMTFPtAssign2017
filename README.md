@@ -91,12 +91,17 @@ rm -rf L1Trigger-L1TMuonEndCap
 git clone git@github.com:dildick/EMTFAnalyzer.git
 git clone git@github.com:dildick/EMTFPtAssign2017.git #put here for completeness, but not needed for running CMSSW
 
-load a test data file from CMSDAS
+# download a test data file from CMSDAS
 xrdcpglobal() {
     xrdcp -f -d 1 "root://cms-xrd-global.cern.ch/$1" .
 }
 
 xrdcp /store/data/Run2018D/ZeroBias/RAW/v1/000/322/022/00000/F87A285E-87AD-E811-89A7-FA163E0481A2.root
+
+# go to the test directory 
+cd EMTFAnalyzer/NTupleMaker/test/
+
+cmsRun RunTrackFinder_Run3_cfg.py
 ```
 
 ## TRK_hit_ids variable
