@@ -101,7 +101,7 @@ xrdcpglobal /store/data/Run2018D/ZeroBias/RAW/v1/000/322/022/00000/F87A285E-87AD
 # go to the test directory 
 cd EMTFAnalyzer/NTupleMaker/test/
 
-cmsRun RunTrackFinder_Run3_cfg.py
+cmsRun RunTrackFinder_Run3_cfg.py inputFiles=file:F87A285E-87AD-E811-89A7-FA163E0481A2.root run3=False unpack=True l1=True
 ```
 
 ## TRK_hit_ids variable
