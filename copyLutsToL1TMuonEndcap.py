@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import glob
-import sys, commands, os, fnmatch
+import sys, os, fnmatch
 import argparse
 import getpass
 import subprocess
@@ -51,4 +51,3 @@ for mode in allowedModes:
                 myfile.write("""<?xml version="1.0"?>\n""")
                 myfile.write(mydata)
                 myfile.close()
-                
