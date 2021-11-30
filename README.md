@@ -54,7 +54,7 @@ The BDT also applies weights based on track characteristics and generator inform
 
 Lastly, Bit Compression has been added into the training to more accurately represent the performance in firmware where the address space is limited ot 30 bits.
 
-## Loading LUT into CMSSW
+## Extracting LUTs from weight files into CMSSW
 The `weights.xml` file is not in the correct format to load into CMSSW directly. Once you have run on all emtf modes you can run `copyLutsToL1TMuonEndcap.py` to generate LUT that are compatible with CMSSW which will be split into 11 directories (1 per mode) with 400 xml files in each directory. These can then be loaded into CMSSW under `L1Trigger/L1TMuonEndCap/data/` as outlined in https://github.com/cms-sw/cmssw/pull/36094. You need to download the repository where you keep the lookup tables
 ```
 git clone https://github.com/dildick/L1Trigger-L1TMuonEndCap
@@ -64,7 +64,7 @@ rm -rf L1Trigger-L1TMuonEndCap
 ```
 In the pt_xmls directory there should be subdirectories, one per version of the BDT lookup tables. In each version there should be 1 subdirectory per valid EMTF track mode. So a directory containing 400 XML files may be in directory, `L1Trigger/L1TMuonEndCap/data/pt_xmls/v0p0/15/`. Each mode should contain 400 xml files.
 
-Note that the script copyLutsToL1TMuonEndcap.py is not yet Python3 compatible. So that needs to be done.
+Note that the script `copyLutsToL1TMuonEndcap.py` is not yet Python3 compatible. So that needs to be done since future release won't be Python2 compatible anymore.
 
 ## Running with own LUTs into CMSSW
 
@@ -85,11 +85,18 @@ git clone https://github.com/dildick/L1Trigger-L1TMuonEndCap
 mkdir L1Trigger/L1TMuonEndCap/data
 cp -r L1Trigger-L1TMuonEndCap/pt_xmls L1Trigger/L1TMuonEndCap/data
 rm -rf L1Trigger-L1TMuonEndCap
-# now customize the trackfinder so that lookup tables are only loaded once per event
+# now customize the trackfinder so that lookup tables are only loaded once per event (see screenshots)
 
+# load these repositories
 git clone git@github.com:dildick/EMTFAnalyzer.git
 git clone git@github.com:dildick/EMTFPtAssign2017.git #put here for completeness, but not needed for running CMSSW
 
+load a test data file from CMSDAS
+xrdcpglobal() {
+    xrdcp -f -d 1 "root://cms-xrd-global.cern.ch/$1" .
+}
+
+xrdcp /store/data/Run2018D/ZeroBias/RAW/v1/000/322/022/00000/F87A285E-87AD-E811-89A7-FA163E0481A2.root
 ```
 
 ## TRK_hit_ids variable
