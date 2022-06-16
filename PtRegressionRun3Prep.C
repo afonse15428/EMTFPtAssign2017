@@ -67,13 +67,13 @@ void PtRegressionRun3Prep(TString user = "",
 
   // Expert options
   // Run-2 overrides all options
-  if (isRun2) {
-    useOneQuartPrecision = false;
-    useOneEighthPrecision = false;
-  }
+  //if (isRun2) {
+  //  useOneQuartPrecision = false;
+  //  useOneEighthPrecision = false;
+  //}
   // check if 1/4 is on
-  if (useOneEighthPrecision)
-    useOneQuartPrecision = true;
+  //if (useOneEighthPrecision)
+  //  useOneQuartPrecision = true;
 
   // FIXME, check if the useGEM bit is set
   bool useGEM = false;
@@ -196,7 +196,11 @@ void PtRegressionRun3Prep(TString user = "",
   std::vector<TChain*> in_chains;
   TString treeString = "FlatNtupleMC/tree";
   if (isRun2) {
-    treeString = "FlatNtupleMCRun2/tree";
+    // TEMP CHANGE MARCH 1, 2022
+    //treeString = "FlatNtupleMCRun2/tree";
+    //treeString = "tree";
+    //UPDATED TO RUN WITH RUN 2 VARS BUT USING RUN3 TPs
+    treeString = "FlatNtupleMCRun3/tree";
   }
   if (!isRun2) {
     treeString = "FlatNtupleMCRun3/tree";
@@ -449,6 +453,11 @@ void PtRegressionRun3Prep(TString user = "",
   UInt_t ZBEvt = 0;
   UInt_t nTrain = 0;
   UInt_t nTest  = 0;
+  UInt_t nPosEndCapTrain = 0;
+  UInt_t nNegEndCapTrain = 0;
+  UInt_t nPosEndCapTest = 0;
+  UInt_t nNegEndCapTest = 0;
+  UInt_t nForceMode = 0;
   Bool_t isZB = false;//tag per event
   Bool_t isTEST = false;//tag per event
 
@@ -465,13 +474,17 @@ void PtRegressionRun3Prep(TString user = "",
 
       if (iEvent > nEvents) break;
       iEvent++;
-      if (jEvt%1000==0) std::cout << "******* About to loop on event " << jEvt << ", nTrain: " << nTrain << ", nTest: " << nTest << " *******" << std::endl;
+      if (jEvt%1000==0) std::cout << "******* About to loop on event " << jEvt << ", nTrain: " << nTrain << ", nTest: " << nTest << ", nPosEndCap: " << nPosEndCapTrain << ", nNegEndCap: " << nNegEndCapTrain << " Number Forced Mode: " << nForceMode << " *******" << std::endl;
       //!!! jEvt restarts from 0 in new chain
 
       //!!! iCh<1 important here: Protect against small MAX_TR setting
       //When iCh = 1, it start to load ZB events, the first break from MAX_TR shouldn't affect the following ZB loading process
       //Otherwise no ZB events will be loaded, cause trouble when calculating rate
-      if (nTrain > MAX_TR && iCh<1) break;
+      if (nTrain > MAX_TR && iCh<1)
+      {
+           std::cout << "******* Ending loop on event " << jEvt << ", nTrain: " << nTrain << ", nTest: " << nTest << ", nPosEndCap: " << nPosEndCapTrain << ", nNegEndCap: " << nNegEndCapTrain << " *******" << std::endl;
+           break;
+      }
       //if (nTest > MAX_TE) break;
 
       //iCh=0 means SingleMu dataset,
@@ -511,9 +524,12 @@ void PtRegressionRun3Prep(TString user = "",
         int mu_charge = -99;
         int gmt_pt = 999;
         Bool_t mu_train = false;  // tag muon for training
+        Bool_t equalEndCapsTrain = true; // ensure equal number of events in both endcaps
+        Bool_t equalEndCapsTest = true; // ensure equal number of events in both endcaps
 
         if(verbose)
         {
+            std::cout << "--------------------------------------------------------------- " << std::endl;
             std::cout << "Event: " << jEvt << ", iTrk: " << iTrk << std::endl;
         }
 
@@ -523,6 +539,19 @@ void PtRegressionRun3Prep(TString user = "",
         mu_eta = F("mu_eta", emtf_unique_iMu);
         mu_phi = F("mu_phi", emtf_unique_iMu);
         mu_charge = I("mu_charge", emtf_unique_iMu);
+
+        //Equal EndCaps
+        equalEndCapsTrain = ((mu_eta > 0 && (nPosEndCapTrain < MAX_TR/2)) || (mu_eta < 0 && (nNegEndCapTrain < MAX_TR/2)));
+        equalEndCapsTest = ((mu_eta > 0 && (nPosEndCapTest < MAX_TE/2)) || (mu_eta < 0 && (nNegEndCapTest < MAX_TE/2)));
+      
+        if(!equalEndCapsTrain && !equalEndCapsTest)
+        {
+            if(verbose)
+            {
+                 std::cout << "Already filled max events for this endcap!" << std::endl;
+            }
+            continue;
+        }
 
         if(verbose) {
           std::cout << "True muon pt " << mu_pt << std::endl;
@@ -618,7 +647,90 @@ void PtRegressionRun3Prep(TString user = "",
         int mode_CSC = emtf_mode_CSC;
         int mode_RPC = emtf_mode_RPC;
         if(verbose) std::cout << "mode: "<<mode<<" MODE: "<<emtfMode<< std::endl;
-        if (mode != emtfMode) continue;
+        if (mode != emtfMode) {
+          if(nForceMode > (MAX_TR + MAX_TE)*FORCE_MODE_FRAC)continue;
+          if(verbose) std::cout << "Attempting to artificially create MODE: " << emtfMode << std::endl;
+          if(emtfMode == 15) {
+           continue;
+          }else if(emtfMode == 14) {
+            if(i1CSC > 0 && i2 > 0 && i3 > 0) {
+              mode = 14;
+              i4 = -99;
+             }else{
+               continue;
+             }
+          }else if(emtfMode == 13) {
+            if(i1CSC > 0 && i2 > 0 && i4 > 0) {
+              mode = 13;
+              i3 = -99;
+             }else{
+               continue;
+             }
+          }else if(emtfMode == 11) {
+            if(i1CSC > 0 && i3 > 0 && i4 > 0) {
+              mode = 11;
+              i2 = -99;
+             }else{
+               continue;
+             }
+          }else if(emtfMode == 7) {
+            if(i2 > 0 && i3 > 0 && i4 > 0) {
+              mode = 7;
+              i1CSC = -99;
+             }else{
+               continue;
+             }
+          }else if(emtfMode == 12) {
+            if(i1CSC > 0 && i2 > 0) {
+              mode = 12;
+              i3 = -99;
+              i4 = -99;
+            }else{
+             continue;
+            }
+          }else if(emtfMode == 10) {
+            if(i1CSC > 0 && i3 > 0) {
+              mode = 10;
+              i2 = -99;
+              i4 = -99;
+            }else{
+             continue;
+            }
+          }else if(emtfMode == 9) {
+            if(i1CSC > 0 && i4 > 0) {
+              mode = 9;
+              i2 = -99;
+              i3 = -99;
+            }else{
+             continue;
+            }
+          }else if(emtfMode == 6) {
+            if(i2 > 0 && i3 > 0) {
+              mode = 6;
+              i1CSC = -99;
+              i4 = -99;
+            }else{
+             continue;
+            }
+          }else if(emtfMode == 5) {
+            if(i2 > 0 && i4 > 0) {
+              mode = 5;
+              i1CSC = -99;
+              i3 = -99;
+            }else{
+             continue;
+            }
+          }else if(emtfMode == 3) {
+            if(i3 > 0 && i4 > 0) {
+              mode = 3;
+              i1CSC = -99;
+              i2 = -99;
+            }else{
+             continue;
+            }
+          }
+          nForceMode++;
+        }
         if (mode != mode_CSC) {
           if(verbose) std::cout << "Not CSC-only track"<< std::endl;
           //continue;
@@ -863,12 +975,6 @@ void PtRegressionRun3Prep(TString user = "",
         if(verbose)
         {
 	    std::cout << "(Before assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
-            if(RPC1 ||  RPC2 || RPC3 || RPC4)
-            {
-                std::cout << "##########(Before assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
-                std::cout << "### i1CSC: " << i1CSC << ", i2: " << i2 << ", i3: " << i3 << ", i4: " << i4  << std::endl;
-                std::cout << "### I(hit_isRPC,i1CSC): " << I("hit_isRPC",i1CSC ) << ", I(hit_isRPC,i2): " << I("hit_isRPC", i2 ) << ", I(hit_isRPC,i3): " << I("hit_isRPC", i3 ) << ", I(hit_isRPC,i4): " << I("hit_isRPC", i4 )  << std::endl;
-            }
         }
         // Check for additional hits
         RPC1 = (i1CSC >= 0 ? ( I("hit_isRPC",i1CSC ) == 1 ? 1 : 0) : -99);
@@ -883,10 +989,6 @@ void PtRegressionRun3Prep(TString user = "",
         if(verbose)
         {
 	    std::cout << "(After assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
-            if(RPC1 ||  RPC2 || RPC3 || RPC4)
-            {
-                std::cout << "##########(After assignment) RPC1: " << RPC1 << ", RPC2: " << RPC2 << ", RPC3: " << RPC3 << ", RPC4: " << RPC4 << std::endl;
-            }
         }
 
         GE11 = (i1GEM >= 0 ? ( I("hit_isGEM",i1GEM ) == 1 ? 1 : 0) : -99);
@@ -936,7 +1038,8 @@ void PtRegressionRun3Prep(TString user = "",
             assert( std::get<2>(factories.at(iFact)).Contains("_noWgt") );
 
           // De-weight tracks with one or more RPC hits
-          evt_weight *= (1. / pow( 4, ((RPC1 == 1) + (RPC2 == 1) + (RPC3 == 1) + (RPC4 == 1)) ) );
+          // Done when CSC hits are replaced with RPC for training purposes. Since 4 different CSCs can be thrown out each RPC then deweight by factor of 4. 
+          // evt_weight *= (1. / pow( 4, ((RPC1 == 1) + (RPC2 == 1) + (RPC3 == 1) + (RPC4 == 1)) ) );
 
           // Fill all variables
           for (UInt_t iVar = 0; iVar < var_names.size(); iVar++) {
@@ -1053,16 +1156,36 @@ void PtRegressionRun3Prep(TString user = "",
           } // End loop: for (UInt_t iVar = 0; iVar < var_names.size(); iVar++)
 
           // Load values into event
-          if ( (NonZBEvt % 2)==0 && mu_train && emtfMode > 0 ) {
+          if ( (NonZBEvt % 2)==0 && mu_train && emtfMode > 0 && equalEndCapsTrain) {
+            if(verbose)
+            {
+                 std::cout << "Added to Training set" << std::endl;
+            }
             std::get<1>(factories.at(iFact))->AddTrainingEvent( "Regression", var_vals, evt_weight );
-            if (iFact == 0) nTrain += 1;
-
+            if (iFact == 0){
+                nTrain += 1;
+                if(mu_eta > 0){
+                    nPosEndCapTrain += 1;
+                }else{
+                     nNegEndCapTrain += 1;
+                }
+            }
             // std::cout << "Total events in training sample " << nTrain << std::endl;
           }
-          else if( nTest < MAX_TE ) {
+          else if( nTest < MAX_TE && equalEndCapsTest) {
+            if(verbose)
+            {
+                 std::cout << "Added to Testing set" << std::endl;
+            }
             std::get<1>(factories.at(iFact))->AddTestEvent( "Regression", var_vals, evt_weight );
-            if (iFact == 0) nTest += 1;
-
+            if (iFact == 0){ 
+                nTest += 1;
+                if(mu_eta > 0){
+                    nPosEndCapTest += 1;
+                }else {
+                    nNegEndCapTest += 1;
+                }
+            }
             // std::cout << "Total events in testing sample " << nTest << std::endl;
           }
         } // End loop: for (UInt_t iFact = 0; iFact < factories.size(); iFact++)
