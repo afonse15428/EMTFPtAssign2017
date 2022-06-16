@@ -1,8 +1,20 @@
-// *** Default user settings *** //
-TString EOS_DIR_NAME = "root://cmseos.fnal.gov//store/user/jrotter/SingleMu/SingleMuFlatOneOverPt1To1000GeV_ANA_v1/211006_133339/";
+// *** Default user settings ***
+TString EOS_DIR_NAME = "root://cms-xrd-global.cern.ch//store/user/eyigitba/emtf/L1Ntuples/Run3/crabOut/SingleMu/SingleMuFlatOneOverPt1To1000GeV_combined/";
+
 TString in_dir = "";
 std::vector<TString> SingleMu_files = {
-    "step3_hadded.root"
+"EMTFNtuple_hadded_posEndcap_v1_1.root",
+"EMTFNtuple_hadded_negEndcap_v1_1.root",
+"EMTFNtuple_hadded_negEndcap_v1_2.root",
+"EMTFNtuple_hadded_posEndcap_v1_2.root",
+"EMTFNtuple_hadded_negEndcap_v1_3.root",
+"EMTFNtuple_hadded_posEndcap_v1_3.root",
+"EMTFNtuple_hadded_negEndcap_v1_4.root",
+"EMTFNtuple_hadded_posEndcap_v1_4.root",
+"EMTFNtuple_hadded_negEndcap_v1_6.root",
+"EMTFNtuple_hadded_posEndcap_v1_6.root",
+"EMTFNtuple_hadded_negEndcap_v1_7.root",
+"EMTFNtuple_hadded_posEndcap_v1_7.root" 
 };
 
 TString ZeroBias_files[1] = {
