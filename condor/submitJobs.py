@@ -55,7 +55,7 @@ Queue
     if not dryRun:
         os.system("condor_submit %s" % fname)
 
-def write_bash(temp = 'runJob.sh', tarball = '', command = '', outputdirectory = '', USER='', CMSSW = "", SCRAM_ARCH = "", dryRun=True):
+def write_bash(temp = 'runJob.sh', tarball = '', command = '', outputdirectory = '', USER='', CMSSW = "", SCRAM_ARCH = "", TARG_VAR = "", WGT_VAR = "", dryRun=True):
 
     #emtfworkdir = tarball.replace('.tar.gz','')
     emtfworkdir = "EMTFPtAssign2017"
@@ -88,7 +88,7 @@ def write_bash(temp = 'runJob.sh', tarball = '', command = '', outputdirectory =
     ## copy the output to EOS
     out += "xrdcp -f PtRegressionOutput.root root://cmseos.fnal.gov//store/user/{user}/{outdir}/\n".format(outdir=outputdirectory, user=USER)
     ## copy the XML file to EOS as well
-    out += "xrdcp -r f_logPtTarg_invPtWgt root://cmseos.fnal.gov//store/user/{user}/{outdir}/\n".format(outdir=outputdirectory, user=USER)
+    out += "xrdcp -r f_{targ}Targ_{wgt}Wgt root://cmseos.fnal.gov//store/user/{user}/{outdir}/\n".format(targ=TARG_VAR, wgt=WGT_VAR, outdir=outputdirectory, user=USER)
     out += 'echo "Removing tarball"\n'
     out += "rm {tarball}\n".format(tarball=tarball)
     ## cleanup
@@ -112,7 +112,8 @@ if __name__ == '__main__':
     parser.add_argument('--interactiveRun', action='store_true', default = False)
     parser.add_argument("--addDateTime", action="store", default = True)
     parser.add_argument('--trainVars',nargs='+', help='Set training variables. Required when Run3 is set', choices=allowedTrainingVars, default = [])
-    parser.add_argument('--targetVar', action="store", help='Set target variable', default="log2(pt)")
+    parser.add_argument('--targetVar', action="store", help='Set target variable', default="logPt")
+    parser.add_argument('--eventWgt', action="store", help='Set event weight', default="invPt")
     parser.add_argument("--isRun2", action="store_true", default = False)
     parser.add_argument("--isRun3", action="store_true", default = False)
     parser.add_argument("--run3Version", action="store", default = "v1")
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     parser.add_argument("--minPt", action="store", default = 1.)
     parser.add_argument("--maxPt", action="store", default = 1000.)
     parser.add_argument("--minPtTrain", action="store", default = 1.)
-    parser.add_argument("--maxPtTrain", action="store", default = 256.)
+    parser.add_argument("--maxPtTrain", action="store", default = 1000.)
     parser.add_argument("--nEvents", action="store", default = -1)
     parser.add_argument("--verbose", action="store_true", default = False)
     args = parser.parse_args()
@@ -288,7 +289,7 @@ if __name__ == '__main__':
     ## 3: create the bash file
     print("Info: Creating bash file")
     exe = "runJob"
-    write_bash(exe+".sh", tarball, command, outputdirectory, USER, CMSSW, SCRAM_ARCH, dryRun)
+    write_bash(exe+".sh", tarball, command, outputdirectory, USER, CMSSW, SCRAM_ARCH, args.targetVar, args.eventWgt, dryRun)
 
     ## 4: submit the job
     print("Info: Creating job file")
